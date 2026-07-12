@@ -1,6 +1,8 @@
 // Kelex Design System — Tokens
 // Extracted from tokens.css
 
+import { Platform } from 'react-native';
+
 export const colors = {
   grey: {
     100: '#ffffff',
@@ -79,6 +81,17 @@ export const colors = {
     800: '#004373',
     900: '#003459',
   },
+  magenta: {
+    100: '#ffd9fd',
+    200: '#ffb0fb',
+    300: '#ff00f2',
+    400: '#e600da',
+    500: '#cc00c2',
+    600: '#bf00b6',
+    700: '#990091',
+    800: '#73006d',
+    900: '#590055',
+  },
   purple: {
     100: '#f0d9ff',
     200: '#dfb0ff',
@@ -117,8 +130,8 @@ export const spacing = {
 
 export const typography = {
   fontFamily: {
-    mono: 'IBMPlexMono-Regular',
-    monoBold: 'IBMPlexMono-Bold',
+    mono: Platform.select({ ios: 'Menlo', default: 'monospace' }) as string,
+    monoBold: Platform.select({ ios: 'Menlo', default: 'monospace' }) as string,
   },
   fontWeight: {
     regular: '400' as const,
