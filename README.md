@@ -2,7 +2,7 @@
 
 A minimal interval timer for set-based workouts. Configure your sets, work, and rest; press play. One screen, no clutter — a list over a progress ring, in monochrome with a single accent color per set.
 
-Built with Expo / React Native. Runs on iOS, Android, and the web.
+![Fartlek](assets/001-fartlek.png)
 
 ## Features
 
