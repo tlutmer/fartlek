@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "fartlek",
+    "name": "Fartlek",
     "slug": "fartlek",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -14,12 +14,13 @@
       "backgroundColor": "#232426"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.kelex.fartlek"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#232426"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
@@ -28,7 +29,8 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-audio"
+      "expo-audio",
+      "expo-font"
     ]
   }
 }

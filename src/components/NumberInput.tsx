@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors, spacing, typography } from '../theme/tokens';
+import { SpaceDust, SpaceDustHandle } from './SpaceDust';
 
 type NumberInputProps = {
   label: string;
@@ -11,6 +12,8 @@ type NumberInputProps = {
 
 export function NumberInput({ label, value, onAdjust, zeroText }: NumberInputProps) {
   const num = parseInt(value) || 0;
+  const minusDust = useRef<SpaceDustHandle>(null);
+  const plusDust = useRef<SpaceDustHandle>(null);
 
   return (
     <View style={styles.container}>
@@ -18,23 +21,31 @@ export function NumberInput({ label, value, onAdjust, zeroText }: NumberInputPro
         <Text style={styles.label}>{label}</Text>
         <View style={styles.stepper}>
           <TouchableOpacity
-            onPress={() => onAdjust(-1)}
+            onPress={() => {
+              minusDust.current?.burst();
+              onAdjust(-1);
+            }}
             activeOpacity={0.6}
             hitSlop={{ top: 14, bottom: 14, left: 14, right: 10 }}
             accessibilityRole="button"
             accessibilityLabel={`Decrease ${label}`}
           >
             <Text style={styles.stepGlyph}>−</Text>
+            <SpaceDust ref={minusDust} />
           </TouchableOpacity>
           <Text style={styles.value}>{num === 0 && zeroText ? zeroText : num}</Text>
           <TouchableOpacity
-            onPress={() => onAdjust(1)}
+            onPress={() => {
+              plusDust.current?.burst();
+              onAdjust(1);
+            }}
             activeOpacity={0.6}
             hitSlop={{ top: 14, bottom: 14, left: 10, right: 14 }}
             accessibilityRole="button"
             accessibilityLabel={`Increase ${label}`}
           >
             <Text style={styles.stepGlyph}>+</Text>
+            <SpaceDust ref={plusDust} />
           </TouchableOpacity>
         </View>
       </View>
@@ -46,22 +57,26 @@ export function NumberInput({ label, value, onAdjust, zeroText }: NumberInputPro
 const styles = StyleSheet.create({
   container: {
     alignSelf: 'stretch',
+    paddingTop: spacing[8], // symmetric with the 8pt underline offset below
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    minHeight: 28,
+    minHeight: 32, // matches the progress rows (incl. boxed values) so both modes line up
+    paddingVertical: spacing[4],
   },
   label: {
     fontFamily: typography.fontFamily.mono,
     fontSize: 12,
     color: colors.grey[100],
+    paddingHorizontal: spacing[8],
   },
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[16],
+    paddingHorizontal: spacing[8],
   },
   stepGlyph: {
     fontFamily: typography.fontFamily.mono,
@@ -82,6 +97,6 @@ const styles = StyleSheet.create({
     height: 1,
     alignSelf: 'stretch',
     backgroundColor: colors.grey[600],
-    marginTop: spacing[4],
+    marginTop: spacing[8],
   },
 });

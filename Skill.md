@@ -5,7 +5,7 @@ description: "Build or modify screens and components in the Fartlek Expo/React N
 
 ## Overview
 
-Fartlek is a React Native app built with Expo (SDK 54). It uses Kelex design tokens (`src/theme/tokens.ts`) and shares core visual components — `Bevel`, `BevelCard`, `CircularDial`, `NumberInput` — adapted from the Kelex design system for React Native.
+Fartlek is a React Native app built with Expo (SDK 54). It uses Kelex design tokens (`src/theme/tokens.ts`) and IBM Plex Mono throughout. Components: `FadeIn`, `Header`, `NumberInput`, `ProgressRing` (with dust trail), `RadioGroup`, and `SpaceDust` (tap-burst particles).
 
 ## When to Apply
 
@@ -26,7 +26,7 @@ npm run web         # Run in browser
 ## Architecture
 
 - `src/theme/tokens.ts` — Kelex color, spacing, and typography tokens for React Native (no CSS vars; values are plain JS)
-- `src/components/` — Shared primitives: `Bevel.tsx`, `BevelCard.tsx`, `CircularDial.tsx`, `NumberInput.tsx`
+- `src/components/` — Shared primitives (see Overview for the current list)
 - `src/screens/` — Full screen views composed from components
 - SVG rendering uses `react-native-svg`
 

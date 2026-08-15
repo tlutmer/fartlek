@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
 import { MainScreen } from './src/screens/MainScreen';
 import { colors } from './src/theme/tokens';
+
+SplashScreen.preventAutoHideAsync();
 
 function Root() {
   const { width, height } = useWindowDimensions();
@@ -20,6 +24,21 @@ function Root() {
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    'IBMPlexMono-Regular': require('./assets/fonts/IBMPlexMono-Regular.ttf'),
+    'IBMPlexMono-Bold': require('./assets/fonts/IBMPlexMono-Bold.ttf'),
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
   return (
     <SafeAreaProvider>
       <Root />

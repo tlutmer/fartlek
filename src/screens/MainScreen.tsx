@@ -18,8 +18,8 @@ import { Header } from '../components/Header';
 import { FadeIn } from '../components/FadeIn';
 import { NumberInput } from '../components/NumberInput';
 import { RadioGroup } from '../components/RadioGroup';
-import { ProgressRing } from '../components/ProgressRing';
-import { PlayIcon, PauseIcon } from '../components/Icons';
+import { ProgressRing, MAX_SEGMENTS } from '../components/ProgressRing';
+import { SpaceDust, SpaceDustHandle } from '../components/SpaceDust';
 
 export type TimeUnit = 'sec' | 'min';
 
@@ -38,14 +38,21 @@ type ConfigDraft = {
 };
 
 const TICK_MS = 33;
-const RING_SIZE = 280; // shrinks on small screens (iPhone SE/8 class) so nothing clips
-const CONFIG_MIN_HEIGHT = 180; // same footprint in config and progress modes so the ring never shifts
+const RING_SIZE = 320; // shrinks on small screens (iPhone SE/8 class) so nothing clips
+const CONFIG_MIN_HEIGHT = 196; // 4 rows × (8 + 32 + 8 + 1): same footprint in config and progress modes so the ring never shifts
 const PREP_SECONDS = 5; // get-ready countdown before the workout begins
 const useNative = Platform.OS !== 'web';
 const UNITS = ['min', 'sec'] as const; // sec stays the default selection
 
 // Ring color rotates per set: cyan → magenta → yellow
 const SET_COLORS = [colors.cyan[300], colors.magenta[300], colors.yellow[300]];
+
+// Dust at phase boundaries varies within the set's color ramp, with a white spark
+const SET_DUST = [
+  [colors.cyan[100], colors.cyan[200], colors.cyan[300], colors.grey[100]],
+  [colors.magenta[100], colors.magenta[200], colors.magenta[300], colors.grey[100]],
+  [colors.yellow[100], colors.yellow[200], colors.yellow[300], colors.grey[100]],
+] as const;
 
 function formatCountdown(secs: number): string {
   const clamped = Math.max(0, Math.ceil(secs));
@@ -69,31 +76,40 @@ function formatPhase(secs: number): string {
   return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 }
 
-function ProgressRow({
+// Memoized: the parent re-renders every timer tick (33ms) but row content only
+// changes once per second at most
+const ProgressRow = React.memo(function ProgressRow({
   label,
   value,
-  valueColor,
+  activeColor,
 }: {
   label: string;
   value: string;
-  valueColor?: string;
+  activeColor?: string; // set color; boxes the value with grey-700 text while the phase is active
 }) {
   return (
     <View style={styles.listRow}>
       <View style={styles.listRowInner}>
         <Text style={styles.rowLabel}>{label}</Text>
-        <Text style={[styles.rowValue, valueColor ? { color: valueColor } : null]}>{value}</Text>
+        <Text
+          style={[
+            styles.rowValue,
+            activeColor ? { backgroundColor: activeColor, color: colors.grey[700] } : null,
+          ]}
+        >
+          {value}
+        </Text>
       </View>
       <View style={styles.underline} />
     </View>
   );
-}
+});
 
 export function MainScreen() {
   const [draft, setDraft] = useState<ConfigDraft>({
     sets: '3',
-    work: '10',
-    rest: '5',
+    work: '45',
+    rest: '15',
     unit: 'sec',
   });
   const [session, setSession] = useState<SessionConfig | null>(null);
@@ -110,13 +126,13 @@ export function MainScreen() {
       [key]: String(Math.max(0, (parseInt(d[key]) || 0) + delta)),
     }));
 
-  // Fit the ring to the screen: portrait stacks (header + config + time need ~420pt of
+  // Fit the ring to the screen: portrait stacks (header + config need ~380pt of
   // height); landscape puts config and ring side by side, so only height constrains it
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const isLandscape = windowWidth > windowHeight;
   const ringSize = isLandscape
-    ? Math.max(140, Math.min(RING_SIZE, windowHeight - 190))
-    : Math.max(160, Math.min(RING_SIZE, windowWidth - 96, windowHeight - 420));
+    ? Math.max(140, Math.min(RING_SIZE, windowHeight - 150))
+    : Math.max(160, Math.min(RING_SIZE, windowWidth - 48, windowHeight - 380));
 
   const unitSeconds = draft.unit === 'min' ? 60 : 1;
   const draftRest = (parseInt(draft.rest) || 0) * unitSeconds;
@@ -246,31 +262,71 @@ export function MainScreen() {
 
   const phaseName = !session ? 'IDLE' : done ? 'DONE' : inPrep ? 'READY' : isWork ? 'WORK' : 'REST';
 
-  // Ring sweeps once per phase (prep, work, rest) rather than tracking the full session
-  const phaseDuration = !session
-    ? 0
-    : inPrep
-    ? PREP_SECONDS
-    : isWork
-    ? session.work
-    : session.rest;
-  const phaseProgress = !session
-    ? 0
-    : done
-    ? 1
-    : phaseDuration > 0
-    ? Math.min(1, Math.max(0, 1 - (inPrep ? prepRemaining : phaseRemaining) / phaseDuration))
-    : 0;
+  const displayTime = !session
+    ? formatFullTime(previewFullTime)
+    : formatCountdown(inPrep ? prepRemaining : remaining);
+
+  // Sci-fi clock rings: outer = work, middle = rest, inner = sets. Segment
+  // counts come from the configured numbers (in the chosen unit); lit segments
+  // count down as each is spent.
+  const setsN = Math.min(draftSets, MAX_SEGMENTS);
+  const workN = Math.min(parseInt(draft.work) || 0, MAX_SEGMENTS);
+  const restN = Math.min(parseInt(draft.rest) || 0, MAX_SEGMENTS);
+  const clockRings = [
+    {
+      segments: workN,
+      lit:
+        !session || inPrep
+          ? workN
+          : done
+          ? 0
+          : isWork
+          ? Math.ceil((phaseRemaining / session.work) * workN)
+          : 0,
+    },
+    {
+      segments: restN,
+      lit:
+        !session || inPrep
+          ? restN
+          : done
+          ? 0
+          : isWork
+          ? restN
+          : session.rest > 0
+          ? Math.ceil((phaseRemaining / session.rest) * restN)
+          : 0,
+    },
+    {
+      segments: setsN,
+      lit: !session ? setsN : done ? 0 : setsN - Math.min(cycleIndex, setsN),
+    },
+  ];
+  // -1 in idle: every ring renders dimmed so the preview stays quiet
+  const activeRing = !session ? -1 : inPrep ? 2 : isWork ? 0 : 1;
 
   // Blink the dial when a new set or rest begins
   const blink = useRef(new Animated.Value(1)).current;
+  const ringDust = useRef<SpaceDustHandle>(null);
+  const playDust = useRef<SpaceDustHandle>(null);
   const boundaryKey = !session ? 'idle' : done ? 'done' : `${phaseName}-${cycleIndex}`;
+
+  // VoiceOver: announce phase transitions (no-op when no screen reader is running)
+  useEffect(() => {
+    if (!session || inPrep) return;
+    AccessibilityInfo.announceForAccessibility(
+      done ? 'Workout complete' : isWork ? `Set ${currentSet}: work` : 'Rest'
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boundaryKey]);
+
   useEffect(() => {
     if (!session || reduceMotion) return;
     if (firstBoundary.current) {
       firstBoundary.current = false;
       return;
     }
+    ringDust.current?.burst();
     blink.setValue(1);
     Animated.sequence([
       Animated.timing(blink, { toValue: 0.15, duration: 90, useNativeDriver: useNative }),
@@ -286,10 +342,12 @@ export function MainScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boundaryKey, blink]);
 
-  const ringColor =
-    !session || done || inPrep
-      ? colors.grey[100]
-      : SET_COLORS[(currentSet - 1) % SET_COLORS.length];
+  // Idle preview wears a quiet Kelex grey; prep/done are white, sets bring color
+  const ringColor = !session
+    ? colors.grey[600]
+    : done || inPrep
+    ? colors.grey[100]
+    : SET_COLORS[(currentSet - 1) % SET_COLORS.length];
 
   // Countdown tick on each second of the get-ready phase
   const prepTick = inPrep ? Math.ceil(prepRemaining) : 0;
@@ -321,16 +379,16 @@ export function MainScreen() {
         <View style={[styles.configSection, isLandscape && styles.configLandscape]}>
           {session ? (
             <>
-              {/* Active phase number takes the set's ring color; inactive stays white */}
+              {/* Active phase number gets a set-colored box; inactive stays plain white */}
               <ProgressRow
                 label="Set"
                 value={`${currentSet}`}
-                valueColor={inPrep || done ? colors.grey[100] : ringColor}
+                activeColor={inPrep || done ? undefined : ringColor}
               />
               <ProgressRow
                 label="Work"
                 value={`${formatPhase(isWork ? phaseRemaining : session.work)} ${draft.unit}`}
-                valueColor={isWork ? ringColor : colors.grey[100]}
+                activeColor={isWork && !inPrep && !done ? ringColor : undefined}
               />
               <ProgressRow
                 label="Rest"
@@ -341,7 +399,7 @@ export function MainScreen() {
                         !isWork && !inPrep && !done ? phaseRemaining : session.rest
                       )} ${draft.unit}`
                 }
-                valueColor={!isWork && !inPrep && !done ? ringColor : colors.grey[100]}
+                activeColor={!isWork && !inPrep && !done ? ringColor : undefined}
               />
             </>
           ) : (
@@ -366,16 +424,26 @@ export function MainScreen() {
 
         <View style={styles.ringSection}>
           <Animated.View style={{ opacity: blink, alignItems: 'center' }}>
-            <Text style={[styles.time, paused && styles.timePaused]}>
-              {!session
-                ? formatFullTime(previewFullTime)
-                : formatCountdown(inPrep ? prepRemaining : remaining)}
-            </Text>
-            <ProgressRing progress={phaseProgress} color={ringColor} size={ringSize}>
-              {/* Bare icon control in the ring: play starts/resumes, pause pauses; hold resets */}
+            <ProgressRing
+              rings={clockRings}
+              activeRing={activeRing}
+              color={ringColor}
+              size={ringSize}
+              dustRef={ringDust}
+              dustColors={
+                session && !inPrep && !done
+                  ? SET_DUST[(currentSet - 1) % SET_DUST.length]
+                  : undefined
+              }
+            >
+              {/* The time is the control: tap the ring to start/pause/resume; hold resets */}
               <TouchableOpacity
-                style={styles.playTouch}
+                style={[
+                  styles.playTouch,
+                  { width: ringSize * 0.7, height: ringSize * 0.7 },
+                ]}
                 onPress={() => {
+                  if (!reduceMotion) playDust.current?.burst();
                   if (!session) start();
                   else if (done) stop();
                   else setPaused((p) => !p);
@@ -389,13 +457,24 @@ export function MainScreen() {
                 accessibilityLabel={
                   !session ? 'Start workout' : paused ? 'Resume workout' : 'Pause workout'
                 }
+                accessibilityValue={{ text: `${displayTime} remaining` }}
                 accessibilityHint={session ? 'Hold to reset the timer' : undefined}
               >
-                {session && !paused && !done ? (
-                  <PauseIcon size={28} color={colors.grey[100]} />
-                ) : (
-                  <PlayIcon size={28} color={colors.grey[100]} />
-                )}
+                <Text
+                  style={[
+                    styles.time,
+                    {
+                      color: paused ? colors.grey[500] : ringColor,
+                      // Same phosphor quality as the ring bloom, scaled for text
+                      textShadowColor: `${paused ? colors.grey[500] : ringColor}66`,
+                      textShadowOffset: { width: 0, height: 0 },
+                      textShadowRadius: 12,
+                    },
+                  ]}
+                >
+                  {displayTime}
+                </Text>
+                <SpaceDust ref={playDust} spread={1.3} />
               </TouchableOpacity>
             </ProgressRing>
           </Animated.View>
@@ -423,9 +502,6 @@ const styles = StyleSheet.create({
     maxWidth: 420,
     marginTop: 0,
     justifyContent: 'center',
-    // offset for the time label + margin that sits above the ring in the right column,
-    // so the config block centers on the circle itself
-    paddingTop: 40,
   },
   configSection: {
     width: '100%',
@@ -434,33 +510,39 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: spacing[24],
     paddingHorizontal: spacing[24],
-    gap: spacing[16],
   },
+  // Rows carry their own symmetric spacing (8 above content, 8 below to the
+  // underline) instead of a section gap, so text centers between underlines
   listRow: {
     alignSelf: 'stretch',
+    paddingTop: spacing[8],
   },
   listRowInner: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    minHeight: 28,
+    minHeight: 32, // fits the boxed value; matches NumberInput row so both modes line up
+    paddingVertical: spacing[4],
   },
   rowLabel: {
     fontFamily: typography.fontFamily.mono,
     fontSize: 12,
     color: colors.grey[100],
+    paddingHorizontal: spacing[8],
   },
   rowValue: {
     fontFamily: typography.fontFamily.mono,
     fontSize: 12,
     color: colors.grey[100],
     fontVariant: ['tabular-nums'],
+    paddingHorizontal: spacing[8],
+    paddingVertical: spacing[4],
   },
   underline: {
     height: 1,
     alignSelf: 'stretch',
     backgroundColor: colors.grey[600],
-    marginTop: spacing[4],
+    marginTop: spacing[8],
   },
   ringSection: {
     flex: 1,
@@ -469,17 +551,14 @@ const styles = StyleSheet.create({
   },
   time: {
     fontFamily: typography.fontFamily.mono,
-    fontSize: 12,
+    fontSize: 21,
     color: colors.grey[100],
     fontVariant: ['tabular-nums'],
-    marginBottom: spacing[24],
-  },
-  timePaused: {
-    color: colors.grey[500],
+    // Room for the text-shadow glow: RN clips shadows to the Text's bounds,
+    // and symmetric padding keeps the digits centered
+    padding: 28,
   },
   playTouch: {
-    width: 72,
-    height: 72,
     alignItems: 'center',
     justifyContent: 'center',
   },

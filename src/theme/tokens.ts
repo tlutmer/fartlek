@@ -1,8 +1,6 @@
 // Kelex Design System — Tokens
 // Extracted from tokens.css
 
-import { Platform } from 'react-native';
-
 export const colors = {
   grey: {
     100: '#ffffff',
@@ -130,8 +128,8 @@ export const spacing = {
 
 export const typography = {
   fontFamily: {
-    mono: Platform.select({ ios: 'Menlo', default: 'monospace' }) as string,
-    monoBold: Platform.select({ ios: 'Menlo', default: 'monospace' }) as string,
+    mono: 'IBMPlexMono-Regular',
+    monoBold: 'IBMPlexMono-Bold',
   },
   fontWeight: {
     regular: '400' as const,
