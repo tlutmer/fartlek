@@ -2,13 +2,9 @@
 
 A minimal interval timer for set-based workouts. Configure your sets, work, and rest; press play. One screen, no clutter — a list over a progress ring, in monochrome with a single accent color per set.
 
-<img src="assets/001-fartlek.png" alt="Fartlek" width="402" />
-
 ## Demo
 
-<img src="assets/fartlek-demo.gif" alt="Fartlek demo" width="402" />
-
-Full-resolution video: [fartlek.mp4](https://github.com/trentlutmer/fartlek/raw/main/assets/fartlek.mp4)
+<img src="assets/fartlek-demo.gif" alt="Fartlek demo" width="800" />
 
 ## Features
 
