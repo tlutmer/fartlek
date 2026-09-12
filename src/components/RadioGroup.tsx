@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors, spacing, typography } from '../theme/tokens';
+import { colors, spacing, typography, rem } from '../theme/tokens';
 
 type RadioGroupProps<T extends string> = {
   options: readonly T[];
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: typography.fontFamily.mono,
-    fontSize: 12,
+    fontSize: rem(12),
     color: colors.grey[100],
   },
 });

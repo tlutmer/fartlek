@@ -1,6 +1,21 @@
 // Kelex Design System — Tokens
 // Extracted from tokens.css
 
+import { Platform } from 'react-native';
+
+const REM_BASE = 16; // matches the browser's default root font-size
+
+// Converts a px-equivalent design value to a web-only CSS rem string so text
+// and spacing scale with the browser's root font-size / zoom. Typed as
+// `number` so call sites don't need type changes; native ignores this and
+// keeps the raw point value. Apply this to a value only after any arithmetic
+// on it is done (e.g. `rem(12 * typography.lineHeight.tight)`, not before) —
+// once converted it's a string at runtime and can't be used in further math.
+export function rem(px: number): number {
+  if (Platform.OS !== 'web') return px;
+  return `${px / REM_BASE}rem` as unknown as number;
+}
+
 export const colors = {
   grey: {
     100: '#ffffff',
@@ -104,26 +119,26 @@ export const colors = {
 } as const;
 
 export const spacing = {
-  0: 0,
-  1: 1,
-  4: 4,
-  8: 8,
-  12: 12,
-  16: 16,
-  20: 20,
-  24: 24,
-  28: 28,
-  32: 32,
-  36: 36,
-  40: 40,
-  44: 44,
-  48: 48,
-  52: 52,
-  56: 56,
-  64: 64,
-  72: 72,
-  80: 80,
-  90: 90,
+  0: rem(0),
+  1: rem(1),
+  4: rem(4),
+  8: rem(8),
+  12: rem(12),
+  16: rem(16),
+  20: rem(20),
+  24: rem(24),
+  28: rem(28),
+  32: rem(32),
+  36: rem(36),
+  40: rem(40),
+  44: rem(44),
+  48: rem(48),
+  52: rem(52),
+  56: rem(56),
+  64: rem(64),
+  72: rem(72),
+  80: rem(80),
+  90: rem(90),
 } as const;
 
 export const typography = {
@@ -136,18 +151,18 @@ export const typography = {
     bold: '400' as const, // Kelex tokens: both weights map to 400
   },
   fontSize: {
-    label: 12.8,
-    body: 16,
-    header3: 20.8,
-    header2: 24,
-    header1: 32,
-    subtitle3: 36,
-    subtitle2: 44,
-    subtitle1: 64,
-    title3: 86,
-    title2: 96,
-    display2: 172,
-    display1: 258,
+    label: rem(12.8),
+    body: rem(16),
+    header3: rem(20.8),
+    header2: rem(24),
+    header1: rem(32),
+    subtitle3: rem(36),
+    subtitle2: rem(44),
+    subtitle1: rem(64),
+    title3: rem(86),
+    title2: rem(96),
+    display2: rem(172),
+    display1: rem(258),
   },
   lineHeight: {
     tight: 1,    // leading-none — buttons, labels, UI elements

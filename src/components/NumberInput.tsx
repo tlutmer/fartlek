@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors, spacing, typography } from '../theme/tokens';
+import { colors, spacing, typography, rem } from '../theme/tokens';
 import { SpaceDust, SpaceDustHandle } from './SpaceDust';
 
 type NumberInputProps = {
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: typography.fontFamily.mono,
-    fontSize: 12,
+    fontSize: rem(12),
     color: colors.grey[100],
     paddingHorizontal: spacing[8],
   },
@@ -80,14 +80,14 @@ const styles = StyleSheet.create({
   },
   stepGlyph: {
     fontFamily: typography.fontFamily.mono,
-    fontSize: 14,
+    fontSize: rem(14),
     color: colors.grey[400],
     width: 20,
     textAlign: 'center',
   },
   value: {
     fontFamily: typography.fontFamily.mono,
-    fontSize: 12,
+    fontSize: rem(12),
     color: colors.grey[100],
     fontVariant: ['tabular-nums'],
     minWidth: 36,

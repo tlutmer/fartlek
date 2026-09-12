@@ -13,8 +13,9 @@ import {
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useAudioPlayer, setAudioModeAsync, AudioPlayer } from 'expo-audio';
 import { Accelerometer } from 'expo-sensors';
-import { colors, spacing, typography } from '../theme/tokens';
+import { colors, spacing, typography, rem } from '../theme/tokens';
 import { Header } from '../components/Header';
+import { Footer } from '../components/Footer';
 import { FadeIn } from '../components/FadeIn';
 import { NumberInput } from '../components/NumberInput';
 import { RadioGroup } from '../components/RadioGroup';
@@ -370,13 +371,27 @@ export function MainScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done]);
 
+  const isMobileWeb = Platform.OS === 'web' && !isLandscape;
+
   return (
     <FadeIn style={styles.fill}>
       <View style={styles.fill}>
         <Header />
 
-        <View style={[styles.body, isLandscape && styles.bodyRow]}>
-        <View style={[styles.configSection, isLandscape && styles.configLandscape]}>
+        <View
+          style={[
+            styles.body,
+            isLandscape && styles.bodyRow,
+            isMobileWeb && styles.bodyMobileWeb,
+          ]}
+        >
+        <View
+          style={[
+            styles.configSection,
+            isLandscape && styles.configLandscape,
+            isMobileWeb && styles.configSectionMobileWeb,
+          ]}
+        >
           {session ? (
             <>
               {/* Active phase number gets a set-colored box; inactive stays plain white */}
@@ -422,7 +437,7 @@ export function MainScreen() {
           )}
         </View>
 
-        <View style={styles.ringSection}>
+        <View style={isMobileWeb ? styles.ringSectionMobileWeb : styles.ringSection}>
           <Animated.View style={{ opacity: blink, alignItems: 'center' }}>
             <ProgressRing
               rings={clockRings}
@@ -480,6 +495,7 @@ export function MainScreen() {
           </Animated.View>
         </View>
         </View>
+        {Platform.OS === 'web' && <Footer />}
       </View>
     </FadeIn>
   );
@@ -495,6 +511,29 @@ const styles = StyleSheet.create({
   bodyRow: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  // On mobile web, group the config list and the dial as one vertically
+  // centered unit instead of docking the list at the top (ringSection loses
+  // its flex so `justifyContent: 'center'` here can center both together)
+  bodyMobileWeb: {
+    justifyContent: 'center',
+  },
+  // Cancel the top-of-screen leading margin (meant for the docked-at-top
+  // layout) so the centered group isn't pushed off-center — the gap between
+  // the config box and the dial is set explicitly on ringSectionMobileWeb
+  configSectionMobileWeb: {
+    marginTop: 0,
+  },
+  // A standalone object (used instead of merging onto `ringSection`, not
+  // alongside it) so no `flex: 1` from that base style ever coexists with
+  // this one: mixing `flex` and `flexGrow`/`flexShrink` across merged style
+  // objects left both active and the box kept expanding, overlapping the
+  // config box above it. No `flex` property here at all means this box
+  // simply sizes to its content.
+  ringSectionMobileWeb: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: spacing[64], // 4rem gap between the config box and the dial
   },
   configLandscape: {
     flex: 1,
@@ -526,13 +565,13 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     fontFamily: typography.fontFamily.mono,
-    fontSize: 12,
+    fontSize: rem(12),
     color: colors.grey[100],
     paddingHorizontal: spacing[8],
   },
   rowValue: {
     fontFamily: typography.fontFamily.mono,
-    fontSize: 12,
+    fontSize: rem(12),
     color: colors.grey[100],
     fontVariant: ['tabular-nums'],
     paddingHorizontal: spacing[8],
@@ -551,12 +590,12 @@ const styles = StyleSheet.create({
   },
   time: {
     fontFamily: typography.fontFamily.mono,
-    fontSize: 21,
+    fontSize: rem(21),
     color: colors.grey[100],
     fontVariant: ['tabular-nums'],
     // Room for the text-shadow glow: RN clips shadows to the Text's bounds,
     // and symmetric padding keeps the digits centered
-    padding: 28,
+    padding: rem(28),
   },
   playTouch: {
     alignItems: 'center',

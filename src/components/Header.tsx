@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, spacing, typography } from '../theme/tokens';
+import { colors, spacing, typography, rem } from '../theme/tokens';
 
 export function Header() {
   return (
@@ -17,8 +17,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: typography.fontFamily.mono,
-    fontSize: 12,
+    fontSize: rem(12),
     color: colors.grey[100],
-    lineHeight: 12 * typography.lineHeight.tight,
+    lineHeight: rem(12 * typography.lineHeight.tight),
   },
 });
