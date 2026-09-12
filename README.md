@@ -4,6 +4,10 @@ A minimal interval timer for set-based workouts. Configure your sets, work, and 
 
 <img src="assets/001-fartlek.png" alt="Fartlek" width="402" />
 
+## Demo
+
+<video src="https://github.com/trentlutmer/fartlek/raw/main/assets/fartlek.mp4" width="402" controls muted playsinline></video>
+
 ## Features
 
 ### Timer
